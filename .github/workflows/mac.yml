@@ -8,7 +8,7 @@ env:
 
 jobs:
   mac:
-    runs-on: macos-26
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
           haxe-version: ${{ env.HAXE_VERSION }}
       - name: Install Haxe dependencies
         run: |
-          haxelib git hxcpp https://github.com/FunkinCrew/hxcpp --quiet
+          haxelib git hxcpp https://github.com/CodenameCrew/hxcpp old --quiet
           haxelib install format --quiet
           haxelib install hxp --quiet
       - name: Configure Lime
@@ -30,8 +30,8 @@ jobs:
           rm -rf ./ndll
           mkdir ./ndll
           haxelib run lime rebuild hxcpp
-          # haxelib run lime rebuild mac -32 -nocolor -nocffi -eval -y
-          haxelib run lime rebuild mac -64 -nocolor -nocffi -eval -y
+          # haxelib run lime rebuild mac -32 -nocolor -nocffi -eval
+          haxelib run lime rebuild mac -64 -nocolor -nocffi -eval
       # - name: Upload Artifact (x86)
         # uses: actions/upload-artifact@v4
         # with:
@@ -48,7 +48,7 @@ jobs:
           path: ndll
           if-no-files-found: error
   macarm64:
-    runs-on: macos-26
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,7 +60,7 @@ jobs:
           haxe-version: ${{ env.HAXE_VERSION }}
       - name: Install Haxe dependencies
         run: |
-          haxelib git hxcpp https://github.com/FunkinCrew/hxcpp --quiet
+          haxelib git hxcpp https://github.com/CodenameCrew/hxcpp old --quiet
           haxelib install format --quiet
           haxelib install hxp --quiet
           haxelib dev lime $GITHUB_WORKSPACE
@@ -70,8 +70,7 @@ jobs:
         run: |
           rm -rf ./ndll
           mkdir ./ndll
-          haxelib run lime rebuild hxcpp
-          haxelib run lime rebuild mac -arm64 -nocolor -nocffi -eval -D HXCPP_ARM64 -y
+          haxelib run lime rebuild mac -arm64 -nocolor -nocffi -eval -D HXCPP_ARM64
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
