@@ -22,7 +22,7 @@ jobs:
       - name: Install Haxe dependencies
         run: |
           sudo apt-get install -qq libgl1-mesa-dev libglu1-mesa-dev libpulse-dev g++ g++-multilib gcc-multilib libasound2-dev libx11-dev libxext-dev libxi-dev libxrandr-dev libxinerama-dev
-          haxelib git hxcpp https://github.com/FunkinCrew/hxcpp --quiet
+          haxelib git hxcpp https://github.com/CodenameCrew/hxcpp old --quiet
           haxelib install format --quiet
           haxelib install hxp --quiet
           haxelib dev lime $GITHUB_WORKSPACE
@@ -31,9 +31,8 @@ jobs:
         run: |
           rm -rf ./ndll
           mkdir ./ndll
-          haxelib run lime rebuild hxcpp
-          haxelib run lime rebuild linux -32 -eval -nocolor -nocffi -y
-          haxelib run lime rebuild linux -64 -eval -nocolor -nocffi -y
+          haxelib run lime rebuild linux -32 -eval -nocolor -nocffi
+          haxelib run lime rebuild linux -64 -eval -nocolor -nocffi
 
       - uses: actions/upload-artifact@v4
         with:
