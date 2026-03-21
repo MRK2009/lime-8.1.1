@@ -29,18 +29,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(HL_MAC)
-#include <sys/stat.h>
-#include <mach/mach.h>
-#include <mach/mach_vm.h>
-#include <dlfcn.h>
-#include <objc/runtime.h>
-#include <dispatch/dispatch.h>
-#include <execinfo.h>
-#include <stdio.h>
-#include <stdlib.h>
-#endif
-
 #if defined(__GLIBC__)
 #if __GLIBC_PREREQ(2, 30)
 // tgkill is present
@@ -54,20 +42,26 @@
 #define MAX_STACK_COUNT 2048
 
 HL_API double hl_sys_time( void );
+HL_API void *hl_gc_threads_info( void );
 HL_API void hl_setup_profiler( void *, void * );
 int hl_module_capture_stack_range( void *stack_top, void **stack_ptr, void **out, int size );
 uchar *hl_module_resolve_symbol_full( void *addr, uchar *out, int *outSize, int **r_debug_addr );
+
+typedef struct {
+	int count;
+	bool stopping_world;
+	hl_thread_info **threads;
+} hl_gc_threads;
 
 typedef struct _thread_handle thread_handle;
 typedef struct _profile_data profile_data;
 
 struct _thread_handle {
 	int tid;
-#	ifdef HL_WIN
+#	ifdef HL_WIN_DESKTOP
 	HANDLE h;
 #	endif
 	hl_thread_info *inf;
-	char name[128];
 	thread_handle *next;
 };
 
@@ -89,7 +83,6 @@ static struct {
 	volatile bool stopLoop;
 	volatile bool waitLoop;
 	thread_handle *handles;
-	thread_handle *olds;
 	void **tmpMemory;
 	void *stackOut[MAX_STACK_COUNT];
 	profile_data *record;
@@ -113,23 +106,6 @@ static void sigprof_handler(int sig, siginfo_t *info, void *ucontext)
 	sem_wait(&shared_context.msg3);
 	sem_post(&shared_context.msg4);
 }
-#elif defined(HL_MAC)
-static struct
-{
-	dispatch_semaphore_t msg2;
-	dispatch_semaphore_t  msg3;
-	dispatch_semaphore_t  msg4;
-	ucontext_t context;
-} shared_context;
-
-static void sigprof_handler(int sig, siginfo_t *info, void *ucontext)
-{
-	ucontext_t *ctx = ucontext;
-	shared_context.context = *ctx;
-	dispatch_semaphore_signal(shared_context.msg2);
-	dispatch_semaphore_wait(shared_context.msg3, DISPATCH_TIME_FOREVER);
-	dispatch_semaphore_signal(shared_context.msg4);
-}
 #endif
 
 static void *get_thread_stackptr( thread_handle *t, void **eip ) {
@@ -152,13 +128,6 @@ static void *get_thread_stackptr( thread_handle *t, void **eip ) {
 	*eip = (void*)shared_context.context.uc_mcontext.gregs[REG_EIP];
 	return (void*)shared_context.context.uc_mcontext.gregs[REG_ESP];
 #	endif
-#elif defined(HL_MAC) && defined(__x86_64__)
-	struct __darwin_mcontext64 *mcontext = shared_context.context.uc_mcontext;
-	if (mcontext != NULL) {
-		*eip = (void*)mcontext->__ss.__rip;
-		return (void*)mcontext->__ss.__rsp;
-	}
-	return NULL;
 #else
 	return NULL;
 #endif
@@ -192,15 +161,6 @@ static bool pause_thread( thread_handle *t, bool b ) {
 		sem_post(&shared_context.msg3);
 		return sem_wait(&shared_context.msg4) == 0;
 	}
-#elif defined(HL_MAC)
-	if( b ) {
-		pthread_kill( t->inf->pthread_id, SIGPROF);
-		return dispatch_semaphore_wait(shared_context.msg2, DISPATCH_TIME_FOREVER) == 0;
-	} else {
-		dispatch_semaphore_signal(shared_context.msg3);
-		return dispatch_semaphore_wait(shared_context.msg4, DISPATCH_TIME_FOREVER) == 0;
-	}
-	return false;
 #else
 	return false;
 #endif
@@ -235,7 +195,7 @@ static void read_thread_data( thread_handle *t ) {
 		return;
 	}
 
-#if defined(HL_LINUX) || defined(HL_MAC)
+#ifdef HL_LINUX
     int count = hl_module_capture_stack_range(t->inf->stack_top, stack, data.stackOut, MAX_STACK_COUNT);
     pause_thread(t, false);
 #else
@@ -251,14 +211,12 @@ static void read_thread_data( thread_handle *t ) {
 #endif
 	int eventId = count | 0x80000000;
 	double time = hl_sys_time();
-	hl_threads_info *gc = hl_gc_threads_info();
-	if( gc->stopping_world ) eventId |= 0x40000000;
+	struct { int count; bool stop; } *gc = hl_gc_threads_info();
+	if( gc->stop ) eventId |= 0x40000000;
 	record_data(&time,sizeof(double));
 	record_data(&t->tid,sizeof(int));
 	record_data(&eventId,sizeof(int));
 	record_data(data.stackOut,sizeof(void*)*count);
-	if( *t->inf->thread_name && !*t->name )
-		memcpy(t->name, t->inf->thread_name, sizeof(t->name));
 }
 
 static void hl_profile_loop( void *_ ) {
@@ -272,7 +230,7 @@ static void hl_profile_loop( void *_ ) {
 			data.waitLoop = false;
 			continue;
 		}
-		hl_threads_info *threads = hl_gc_threads_info();
+		hl_gc_threads *threads = (hl_gc_threads*)hl_gc_threads_info();
 		int i;
 		thread_handle *prev = NULL;
 		thread_handle *cur = data.handles;
@@ -281,40 +239,13 @@ static void hl_profile_loop( void *_ ) {
 			if( t->flags & HL_THREAD_INVISIBLE ) continue;
 
 			if( !cur || cur->tid != t->thread_id ) {
-				// have we lost a thread ?
-				thread_handle *h = cur;
-				thread_handle *hprev = prev;
-				while( h ) {
-					if( h->tid == t->thread_id ) {
-						// remove from previous queue
-						if( hprev ) {
-							hprev->next = h->next;
-						} else {
-							data.handles = h->next;
-						}
-						// insert at current position
-						if( prev ) {
-							h->next = prev->next;
-							prev->next = h;
-						} else {
-							h->next = data.handles;
-							data.handles = h;
-						}
-						break;
-					}
-					hprev = h;
-					h = h->next;
-				}
-				if( !h ) {
-					h = malloc(sizeof(thread_handle));
-					memset(h,0,sizeof(thread_handle));
-					h->tid = t->thread_id;
-					h->inf = t;
-					thread_data_init(h);
-					h->next = cur;
-					cur = h;
-					if( prev == NULL ) data.handles = h; else prev->next = h;
-				}
+				thread_handle *h = malloc(sizeof(thread_handle));
+				h->tid = t->thread_id;
+				h->inf = t;
+				thread_data_init(h);
+				h->next = cur;
+				cur = h;
+				if( prev == NULL ) data.handles = h; else prev->next = h;
 			}
 			if( (t->flags & HL_THREAD_PROFILER_PAUSED) == 0 )
 				read_thread_data(cur);
@@ -323,15 +254,9 @@ static void hl_profile_loop( void *_ ) {
 		}
 		if( prev ) prev->next = NULL; else data.handles = NULL;
 		while( cur != NULL ) {
-			thread_handle *n;
 			thread_data_free(cur);
-			n = cur->next;
-			if( *cur->name ) {
-				cur->next = data.olds;
-				data.olds = cur;
-			} else
-				free(cur);
-			cur = n;
+			free(cur);
+			cur = cur->next;
 		}
 		next += wait_time;
 	}
@@ -344,7 +269,7 @@ static void hl_profile_loop( void *_ ) {
 static void profile_event( int code, vbyte *data, int dataLen );
 
 void hl_profile_setup( int sample_count ) {
-#	if defined(HL_THREADS) && (defined(HL_WIN_DESKTOP) || defined(HL_LINUX) || defined (HL_MAC))
+#	if defined(HL_THREADS) && (defined(HL_WIN_DESKTOP) || defined(HL_LINUX))
 	hl_setup_profiler(profile_event,hl_profile_end);
 	if( data.sample_count ) return;
 	if( sample_count < 0 ) {
@@ -357,15 +282,6 @@ void hl_profile_setup( int sample_count ) {
 	sem_init(&shared_context.msg2, 0, 0);
 	sem_init(&shared_context.msg3, 0, 0);
 	sem_init(&shared_context.msg4, 0, 0);
-	struct sigaction action = {0};
-	action.sa_sigaction = sigprof_handler;
-	action.sa_flags = SA_SIGINFO;
-	sigaction(SIGPROF, &action, NULL);
-#	elif defined(HL_MAC)
-	shared_context.context.uc_mcontext = NULL;
-	shared_context.msg2 = dispatch_semaphore_create(0);
-	shared_context.msg3 = dispatch_semaphore_create(0);
-	shared_context.msg4 = dispatch_semaphore_create(0);
 	struct sigaction action = {0};
 	action.sa_sigaction = sigprof_handler;
 	action.sa_flags = SA_SIGINFO;
@@ -389,23 +305,6 @@ static bool read_profile_data( profile_reader *r, void *ptr, int size ) {
 		}
 	}
 	return true;
-}
-
-static int write_names( thread_handle *h, FILE *f ) {
-	int count = 0;
-	while( h ) {
-		if( *h->name ) {
-			if( f ) {
-				int len = (int)strlen(h->name);
-				fwrite(&h->tid,1,4,f);
-				fwrite(&len,1,4,f);
-				fwrite(h->name,1,len,f);
-			} else
-				count++;
-		}
-		h = h->next;
-	}
-	return count;
 }
 
 static void profile_dump() {
@@ -466,9 +365,6 @@ static void profile_dump() {
 			}
 		}
 	}
-	double tend = -1;
-	fwrite(&tend,1,8,f);
-
 	// reset debug_addr flags (allow further dumps)
 	r.r = data.first_record;
 	r.pos = 0;
@@ -491,12 +387,6 @@ static void profile_dump() {
 			read_profile_data(&r,NULL,size);
 		}
 	}
-	// dump threads names
-	int names_count = write_names(data.handles,NULL) + write_names(data.olds,NULL);
-	fwrite(&names_count,1,4,f);
-	write_names(data.handles,f);
-	write_names(data.olds,f);
-	// done
 	fclose(f);
 	printf("%d profile samples saved\n", samples);
 	data.profiling_pause--;

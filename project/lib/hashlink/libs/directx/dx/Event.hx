@@ -4,8 +4,6 @@ package dx;
 	public var type : EventType;
 	public var mouseX : Int;
 	public var mouseY : Int;
-	public var mouseXRel : Int;
-	public var mouseYRel : Int;
 	public var button : Int;
 	public var wheelDelta : Int;
 	public var state : WindowStateChange;
@@ -14,12 +12,11 @@ package dx;
 	public var keyRepeat : Bool;
 	public var controller : Int;
 	public var value : Int;
-	public var dropFile: hl.Bytes;
 	public function new() {
 	}
 }
 
-enum abstract EventType(Int) {
+@:enum abstract EventType(Int) {
 	var Quit		= 0;
 	var MouseMove	= 1;
 	var MouseLeave	= 2;
@@ -30,12 +27,9 @@ enum abstract EventType(Int) {
 	var KeyDown		= 7;
 	var KeyUp		= 8;
 	var TextInput	= 9;
-	var DropStart = 10;
-	var DropFile = 11;
-	var DropEnd = 12;
 }
 
-enum abstract WindowStateChange(Int) {
+@:enum abstract WindowStateChange(Int) {
 	var Show	= 0;
 	var Hide	= 1;
 	var Expose	= 2;

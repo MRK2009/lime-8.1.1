@@ -48,8 +48,6 @@
 #undef HIDDEN
 #undef RESIZABLE
 #undef __SIGN
-#undef far
-#undef FAR
 
 // disable some warnings triggered by HLC code generator
 

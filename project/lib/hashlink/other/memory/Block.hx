@@ -21,13 +21,9 @@ abstract Pointer(haxe.Int64) {
 	public inline function shift( k : Int ) : haxe.Int64 {
 		return haxe.Int64.shr(this,k);
 	}
-
-	public static var NULL(get,never) : Pointer;
-	inline static function get_NULL() return new Pointer(0);
-
 }
 
-enum abstract PageKind(Int) {
+@:enum abstract PageKind(Int) {
 	var PDynamic = 0;
 	var PRaw = 1;
 	var PNoPtr = 2;
@@ -94,7 +90,9 @@ class Block {
 	public function new() {
 	}
 
-	inline function set_type( t : TType ) {
+	function set_type( t : TType ) {
+		if( t != null && t.t == HF64 && page.kind != PNoPtr )
+			throw "!";
 		return type = t;
 	}
 
@@ -197,7 +195,7 @@ class PointerMap<T> {
 	}
 
 	public function get( p : Pointer ) : T {
-		if( p.isNull() ) return null;
+		if( p == null ) return null;
 		var c = lookup.get(p.value.high);
 		if( c == null ) return null;
 		return c.get(p.value.low);

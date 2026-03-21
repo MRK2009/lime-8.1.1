@@ -1,7 +1,5 @@
 package dx;
 
-#if !dx12
-
 typedef DriverInstance = hl.Abstract<"dx_driver">;
 
 typedef Pointer = hl.Abstract<"dx_pointer">;
@@ -65,7 +63,7 @@ abstract DxBool(Int) {
 	@:from static function fromBool( b : Bool ) : DxBool return cast b;
 }
 
-enum abstract DriverInitFlags(Int) {
+@:enum abstract DriverInitFlags(Int) {
 	var None = 0;
 	var SingleThread = 1;
 	var DebugLayer = 2;
@@ -79,14 +77,14 @@ enum abstract DriverInitFlags(Int) {
 	@:op(a | b) static function or(a:DriverInitFlags, b:DriverInitFlags) : DriverInitFlags;
 }
 
-enum abstract ResourceUsage(Int) {
+@:enum abstract ResourceUsage(Int) {
 	var Default = 0;
 	var Immutable = 1;
 	var Dynamic = 2;
 	var Staging = 3;
 }
 
-enum abstract ResourceBind(Int) {
+@:enum abstract ResourceBind(Int) {
 	var None = 0;
 	var VertexBuffer = 1;
 	var IndexBuffer = 2;
@@ -101,14 +99,14 @@ enum abstract ResourceBind(Int) {
 	@:op(a | b) static function or(a:ResourceBind, b:ResourceBind) : ResourceBind;
 }
 
-enum abstract ResourceAccess(Int) {
+@:enum abstract ResourceAccess(Int) {
 	var None = 0;
 	var CpuWrite = 0x10000;
 	var CpuRead = 0x20000;
 	@:op(a | b) static function or(a:ResourceAccess, b:ResourceAccess) : ResourceAccess;
 }
 
-enum abstract ResourceMisc(Int) {
+@:enum abstract ResourceMisc(Int) {
 	var None = 0;
 	var GenerateMips = 1;
 	var Shared = 2;
@@ -130,7 +128,7 @@ enum abstract ResourceMisc(Int) {
 	@:op(a | b) static function or(a:ResourceMisc, b:ResourceMisc) : ResourceMisc;
 }
 
-enum abstract ShaderFlags(Int) {
+@:enum abstract ShaderFlags(Int) {
 	var None = 0;
 	var Debug = 0x1;
 	var SkipValidation = 0x2;
@@ -157,7 +155,7 @@ enum abstract ShaderFlags(Int) {
 	@:op(a | b) static function or(a:ShaderFlags, b:ShaderFlags) : ShaderFlags;
 }
 
-enum abstract PrimitiveTopology(Int) {
+@:enum abstract PrimitiveTopology(Int) {
 	var Undefined = 0;
 	var PointList = 1;
 	var LineList = 2;
@@ -170,7 +168,7 @@ enum abstract PrimitiveTopology(Int) {
 	static inline function controlPointPatchList(count:Int) : PrimitiveTopology return cast (count + 32);
 }
 
-enum abstract DisassembleFlags(Int) {
+@:enum abstract DisassembleFlags(Int) {
 	var None = 0;
 	var EnableColorCode = 1;
 	var EnableDefaultValuePrints = 2;
@@ -183,7 +181,7 @@ enum abstract DisassembleFlags(Int) {
 	@:op(a | b) static function or(a:DisassembleFlags, b:DisassembleFlags) : DisassembleFlags;
 }
 
-enum abstract LayoutClassification(Int) {
+@:enum abstract LayoutClassification(Int) {
 	var PerVertexData = 0;
 	var PerInstanceData = 1;
 }
@@ -201,7 +199,7 @@ class LayoutElement {
 	}
 }
 
-enum abstract ResourceDimension(Int) {
+@:enum abstract ResourceDimension(Int) {
 	var Unknown = 0;
 	var Buffer = 1;
 	var Texture1D = 2;
@@ -239,12 +237,12 @@ class RenderTargetDesc {
 	inline function set_elementCount(m) return firstSlice = m;
 }
 
-enum abstract FillMode(Int) {
+@:enum abstract FillMode(Int) {
 	public var WireFrame = 2;
 	public var Solid = 3;
 }
 
-enum abstract CullMode(Int) {
+@:enum abstract CullMode(Int) {
 	public var None = 1;
 	public var Front = 2;
 	public var Back = 3;
@@ -288,7 +286,7 @@ class Texture2dDesc {
 	}
 }
 
-enum abstract ComparisonFunc(Int) {
+@:enum abstract ComparisonFunc(Int) {
 	var Never = 1;
 	var Less = 2;
 	var Equal = 3;
@@ -299,7 +297,7 @@ enum abstract ComparisonFunc(Int) {
 	var Always = 8;
 }
 
-enum abstract StencilOp(Int) {
+@:enum abstract StencilOp(Int) {
 	var Keep = 1;
 	var Zero = 2;
 	var Replace = 3;
@@ -350,7 +348,7 @@ class DepthStencilDesc {
 	}
 }
 
-enum abstract Blend(Int) {
+@:enum abstract Blend(Int) {
 	var Zero = 1; // (;_;)
 	var One = 2;
 	var SrcColor = 3;
@@ -370,7 +368,7 @@ enum abstract Blend(Int) {
 	var InvSrc1Alpha = 19;
 }
 
-enum abstract BlendOp(Int) {
+@:enum abstract BlendOp(Int) {
 	var Add = 1;
 	var Subtract = 2;
 	var RevSubstract = 3;
@@ -394,7 +392,7 @@ class RenderTargetBlendDesc {
 	}
 }
 
-enum abstract Filter(Int) {
+@:enum abstract Filter(Int) {
 	var MinMagMipPoint = 0;
 	var MinMagPointMipLinear = 0x1;
 	var MinPointMagLinearMipPoint = 0x4;
@@ -433,7 +431,7 @@ enum abstract Filter(Int) {
 	var MaximumAnisotropic = 0x1d5;
 }
 
-enum abstract AddressMode(Int) {
+@:enum abstract AddressMode(Int) {
 	var Wrap = 1;
 	var Mirror = 2;
 	var Clamp = 3;
@@ -472,7 +470,7 @@ class ShaderResourceViewDesc {
 	}
 }
 
-enum abstract PresentFlags(Int) {
+@:enum abstract PresentFlags(Int) {
 	var None = 0;
 	var Test = 1;
 	var DoNotSequence = 2;
@@ -626,7 +624,7 @@ class Driver {
 		return dxCreateTexture2d(desc,data);
 	}
 
-	public static function createDepthStencilView( texture : Resource, format : Format, readOnly : Bool ) : DepthStencilView {
+	public static function createDepthStencilView( texture : Resource, format : Format ) : DepthStencilView {
 		return null;
 	}
 
@@ -759,5 +757,3 @@ class Driver {
 	}
 
 }
-
-#end

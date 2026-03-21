@@ -25,8 +25,8 @@ if(WIN32)
     )
 endif()
 
-if(APPLE OR UNIX)
-    find_package(OpenGL REQUIRED)
+if(APPLE)
+    find_package(OPENGL REQUIRED)
     target_include_directories(sdl.hdll
         PRIVATE
         ${OPENGL_INCLUDE_DIR}

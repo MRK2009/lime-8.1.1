@@ -112,10 +112,7 @@ class Sdl {
 	}
 	
 	public static function getDisplayModes(display : Window.DisplayHandle) : Array<ScreenMode> {
-		var modes = get_display_modes(display);
-		if(modes == null)
-			return [];
-		return [ for(m in modes) m ];
+		return [ for(m in get_display_modes(display)) m ];
 	}
 
 	public static function getCurrentDisplayMode(display : Window.DisplayHandle, registry : Bool = false) : ScreenMode {
@@ -123,9 +120,6 @@ class Sdl {
 	}
 
 	public static function getDisplays() : Array<Display> {
-		var displays = get_displays();
-		if(displays == null)
-			return [];
 		var i = 0;
 		return [ for(d in get_displays() ) @:privateAccess { handle: d.handle, name: '${String.fromUTF8(d.name)} (${++i})', left: d.left, top: d.top, right: d.right, bottom: d.bottom } ];
 	}
@@ -177,7 +171,7 @@ class Sdl {
 		return 0;
 	}
 
-	@:hlNative("?sdl", "get_screen_height_of_window")
+	@:hlNative("?sdl", "get_screen_height_of_display")
 	static function get_screen_height_of_window(win: sdl.Window.WinPtr) : Int {
 		return 0;
 	}
@@ -199,6 +193,12 @@ class Sdl {
 		return null;
 	}
 
+
+	@:hlNative("?sdl", "get_desktop_display_mode")
+	static function get_desktop_display_mode(displayId : Int) : Dynamic {
+		return null;
+	}
+
 	@:hlNative("?sdl", "get_displays")
 	static function get_displays() : hl.NativeArray<Dynamic> {
 		return null;
@@ -206,14 +206,6 @@ class Sdl {
 
 	static function get_devices() : hl.NativeArray<hl.Bytes> {
 		return null;
-	}
-
-	public static function getRelativeMouseMode() : Bool {
-		return false;
-	}
-	
-	public static function warpMouseGlobal( x : Int, y : Int ) : Int {
-		return 0;
 	}
 
 	static function detect_keyboard_layout() : hl.Bytes {
@@ -233,18 +225,10 @@ class Sdl {
 	private static function _getClipboardText() : hl.Bytes {
 		return null;
 	}
-	
-	@:hlNative("?sdl", "set_drag_and_drop_enabled")
-	public static function setDragAndDropEnabled( v : Bool ): Void {
-	}
-	
-	@:hlNative("?sdl", "get_drag_and_drop_enabled")
-	public static function getDragAndDropEnabled(): Bool {
-		return false;
-	}
 }
 
-enum abstract SDLHint(String) from String to String {
+@:enum
+abstract SDLHint(String) from String to String {
 
 	var SDL_HINT_FRAMEBUFFER_ACCELERATION =                 "SDL_FRAMEBUFFER_ACCELERATION";
 	var SDL_HINT_RENDER_DRIVER =                            "SDL_RENDER_DRIVER";

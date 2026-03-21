@@ -1,29 +1,13 @@
 
-typedef unsigned short fl_cursor;
-
-typedef struct {
-	fl_cursor pos;
-	fl_cursor count;
-} gc_fl;
-
-typedef struct _gc_freelist {
-	int current;
-	int count;
-	int size_bits;
-	gc_fl *data;
-} gc_freelist;
-
-#define SIZES_PADDING 8
-
 typedef struct {
 	int block_size;
-	unsigned char size_bits;
-	unsigned char need_flush;
-	short first_block;
 	int max_blocks;
+	int first_block;
 	// mutable
-	gc_freelist free;
+	int next_block;
+	int free_blocks;
 	unsigned char *sizes;
-	char sizes_ref[SIZES_PADDING];
+	int sizes_ref;
+	int sizes_ref2;
 } gc_allocator_page_data;
 

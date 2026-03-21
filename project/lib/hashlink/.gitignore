@@ -10,7 +10,6 @@
 *.n
 Debug
 Release
-ReleaseVS2013
 x64
 *.stackdump
 *.hdll
@@ -21,7 +20,6 @@ x64
 *.a
 *.opendb
 *.VC.db
-.vs
 /hl
 /include/sdl
 /include/openal
@@ -39,6 +37,7 @@ ReleaseStatic
 /src/Makefile
 /include/ffmpeg
 shiroLibs
+ReleaseVS*
 /include/bullet
 /libs/bullet/sample/sample.js
 /libs/bullet/bullet_js.cpp

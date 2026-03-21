@@ -315,7 +315,7 @@ class IOSPlatform extends PlatformTarget
 			case "ipad": "2";
 			default: "1,2";
 		}
-		context.DEPLOYMENT = project.config.getString("ios.deployment", "9.0");
+		context.DEPLOYMENT = project.config.getString("ios.deployment", "13.6");
 
 		if (project.config.getString("ios.compiler") == "llvm" || project.config.getString("ios.compiler", "clang") == "clang")
 		{
@@ -449,6 +449,8 @@ class IOSPlatform extends PlatformTarget
 			context.HAXELIB_PATH = '';
 		}
 
+            context.CATEGORY_TYPE = project.config.getString("ios.category_type", "public.app-category.entertainment");
+
 		return context;
 	}
 
@@ -475,8 +477,7 @@ class IOSPlatform extends PlatformTarget
 	public override function rebuild():Void
 	{
 		var armv6 = (project.architectures.indexOf(Architecture.ARMV6) > -1 && !project.targetFlags.exists("simulator"));
-		var armv7 = (command == "rebuild"
-			|| (project.architectures.indexOf(Architecture.ARMV7) > -1 && !project.targetFlags.exists("simulator")));
+		var armv7 = (project.architectures.indexOf(Architecture.ARMV7) > -1 && !project.targetFlags.exists("simulator"));
 		var armv7s = (project.architectures.indexOf(Architecture.ARMV7S) > -1 && !project.targetFlags.exists("simulator"));
 		var arm64 = (command == "rebuild"
 			|| (project.architectures.indexOf(Architecture.ARM64) > -1 && !project.targetFlags.exists("simulator")));
