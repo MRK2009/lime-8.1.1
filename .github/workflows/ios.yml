@@ -5,7 +5,7 @@ on:
 
 jobs:
   ios:
-    runs-on: macos-26
+    runs-on: macos-15
     steps:
 
       - uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Haxe dependencies
         run: |
-          haxelib git hxcpp https://github.com/FunkinCrew/hxcpp --quiet
+          haxelib git hxcpp https://github.com/CodenameCrew/hxcpp old --quiet
           haxelib install format --quiet
           haxelib install hxp --quiet
 
@@ -35,7 +35,6 @@ jobs:
         run: |
           rm -rf ./ndll
           mkdir ./ndll
-          haxelib run lime rebuild hxcpp
           lime rebuild ios -clean -eval -nocolor -nocffi -release -y
 
       - uses: actions/upload-artifact@v4
