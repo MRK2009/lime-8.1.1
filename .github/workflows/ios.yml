@@ -35,7 +35,7 @@ jobs:
         run: |
           rm -rf ./ndll
           mkdir ./ndll
-          lime rebuild ios -clean -eval -nocolor -nocffi -release -y
+          lime rebuild ios -clean -eval -nocolor -nocffi -release
 
       - uses: actions/upload-artifact@v4
         with:
