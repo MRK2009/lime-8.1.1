@@ -17,7 +17,7 @@ jobs:
           haxe-version: 4.3.7
       - name: Install Haxe dependencies
         run: |
-          haxelib git hxcpp https://github.com/FunkinCrew/hxcpp --quiet
+          haxelib git hxcpp https://github.com/CodenameCrew/hxcpp old --quiet
           haxelib install format --quiet
           haxelib install hxp --quiet
           haxelib dev lime ${{ github.workspace }}
@@ -26,9 +26,8 @@ jobs:
         run: |
           rm -rf ./ndll
           mkdir ./ndll
-          haxelib run lime rebuild hxcpp
-          haxelib run lime rebuild windows -32 -nocolor -nocffi -eval -y
-          haxelib run lime rebuild windows -64 -nocolor -nocffi -eval -y
+          haxelib run lime rebuild windows -32 -nocolor -nocffi -eval
+          haxelib run lime rebuild windows -64 -nocolor -nocffi -eval
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
