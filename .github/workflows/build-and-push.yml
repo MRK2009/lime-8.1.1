@@ -43,11 +43,11 @@ jobs:
           
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add ndll
-          git add tools/tools.n
-          git add run.n
-          git add svg.n
-          # git add templates/bin/lime.exe
+          git add ndll -f
+          git add tools/tools.n -f
+          git add run.n -f
+          git add svg.n -f
+          # git add templates/bin/lime.exe -f
           git commit --author="${USERNAME} <${USERID}+$(echo "$USERNAME" | sed 's/ /-/g')@users.noreply.github.com>" -m "Built and Pushed New NDLL's." || {
               echo "Didn't commit anything, skipping git push."
               exit 0
